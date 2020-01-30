@@ -1,0 +1,14 @@
+
+input:
+  pr: 
+  prsn: 
+  tas: 
+
+years:
+  from: 
+  to: 
+output:
+  file: 
+  variable: approx_snow_height
+  format: netcdf
+

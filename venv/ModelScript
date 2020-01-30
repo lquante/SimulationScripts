@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+set -e
+
+print_usage () {
+    cat <<EOF
+start-model - start a specified model on sbatch
+Usage:
+    $0 [OPTIONS] SETTINGSFILE
+Options:
+    --model PATH   Path to model binary (default: CURRENT/model)
+    --cpus CPUS        Number of cpus (default: 16)
+    --jobname JOBNAME  Name of job (default: model)
+    --logdir PATH      Directory for log output (default: CURRENT)
+    --maxtime TIME     Max runtime (default: 1-00:00:00)
+    --queue QUEUE      Cluster queue: priority (default), short, medium, long
+    --workdir PATH     Directory to work in (default: CURRENT)
+EOF
+    exit 1
+}
+
+# set defaults:
+model="$(pwd)/model"
+jobname="model"
+logdir=$(pwd)
+queue="priority"
+cpus=16
+time="1-00:00:00"
+workdir=$(pwd)
+partition="priority"
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+        --model)
+            shift || print_usage
+            model="$1"
+            ;;
+        --cpus)
+            shift || print_usage
+            cpus="$1"
+            ;;
+        --jobname)
+            shift || print_usage
+            jobname="$1"
+            ;;
+        --logdir)
+            shift || print_usage
+            logdir="$1"
+            ;;
+        --queue)
+            shift || print_usage
+            queue="$1"
+            case "$queue" in
+                priority)
+                    partition="priority"
+                    ;;
+                short|medium|long)
+                    partition="standard"
+                    ;;
+                ram_gpu)
+                    partition="ram_gpu"
+                    queue="short"
+                    ;;
+                *)
+                    echo "Unknown cluster queue '$queue'"
+                    exit 1
+                    ;;
+            esac
+            ;;
+        --time)
+            shift || print_usage
+            time="$1"
+            ;;
+        --workdir)
+            shift || print_usage
+            workdir="$1"
+            ;;
+        *)
+            if [[ -z "$settings" ]]
+            then
+                settings=$(cat "$key")
+            else
+                print_usage
+            fi
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$settings" ]]
+then
+    print_usage
+fi
+
+if [[ ! -e "$model" ]]
+then
+    echo "Cannot find $model"
+    exit 1
+fi
+
+mkdir -p "$workdir"
+mkdir -p "$logdir"
+
+slurmheader=$(cat <<EOF
+#SBATCH --job-name="$jobname"
+#SBATCH --qos=$queue
+#SBATCH --partition=$partition
+#SBATCH --output=$logdir/%j.txt
+#SBATCH --error=$logdir/%j.txt
+#SBATCH --account=acclimat
+#SBATCH --nice=0
+#SBATCH --profile=none
+#SBATCH --acctg-freq=energy=0
+#SBATCH --time=$time
+#SBATCH --export=ALL,OMP_PROC_BIND=FALSE,OMP_NUM_THREADS=$cpus
+#SBATCH --mail-type=FAIL,TIME_LIMIT
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=$cpus
+#SBATCH --workdir=$workdir
+EOF
+           )
+
+job=$(cat << EOFJOB
+#!/usr/bin/env bash
+$slurmheader
+set +e
+cmd=\$(cat <<'EOF1'
+if [ -z "\${DMTCP_CHECKPOINT_DIR}" ]
+then
+    first_run=1
+    export DMTCP_CHECKPOINT_DIR=\${SLURM_JOB_ID}
+else
+    first_run=0
+fi
+if [ -e \${DMTCP_CHECKPOINT_DIR} ]
+then
+    echo "CONTINUING \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
+    echo "Original job id \${DMTCP_CHECKPOINT_DIR}"
+    dmtcp_restart \$(ls \${DMTCP_CHECKPOINT_DIR}/*.dmtcp)
+else
+    echo "STARTING \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
+    settings=\$(cat <<EOF
+$settings
+EOF
+)
+    mkdir -p \${DMTCP_CHECKPOINT_DIR}
+    echo
+    echo "\$settings"
+    echo
+    echo "\$settings" > \${DMTCP_CHECKPOINT_DIR}/settings.yml
+    echo "\$settings" | dmtcp_launch $model - 10>&- 11>&-
+fi
+retval=\$?
+if [ \$retval -eq 0 ]
+then
+    rm -rf \${DMTCP_CHECKPOINT_DIR}
+    echo "Job completed"
+    echo "DONE \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
+else
+    if [ \$retval -ne 7 ]
+    then
+        if [ \$first_run -eq 0 ]
+        then
+            echo "FAILED \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
+        fi
+        exit \$retval
+    else
+        sbatch <<EOF2
+#!/bin/bash
+$slurmheader
+cmd=\\\$(cat <<'EOF\$(echo 1)'
+\$cmd
+EOF\$(echo 1)
+)
+export cmd
+echo "\\\$cmd" | bash
+EOF2
+        if [ \$first_run -eq 0 ]
+        then
+            echo "DONE \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
+        fi
+        exit \$?
+    fi
+fi
+EOF1
+)
+export cmd
+echo "\$cmd" | bash
+EOFJOB
+      )
+
+sbatch <<< "$job"
