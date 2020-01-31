@@ -52,25 +52,19 @@ parser.add_argument(
     "--outputfile",
     nargs="+"
     ,type=str,
-    help="Path and name to output file  (default: CURRENT/output.nc)"
+    help="Path and name to output file  (default: CURRENT/output_IDENTIFIER.nc)"
 )
 
 args = parser.parse_args()
 
 # default root directory
 if not args.root:
-    args.root = os.path.dirname("/home/maxkotz/Desktop/QuanteLennart_projects")
-
-        #os.getcwd()
-
-if not os.path.exists(args.root):
-    exit("Model binary '{}' not found".format(args.model))
-
+    args.root = os.getcwd()
 
 if not os.path.exists(args.root):
     exit("root directory '{}' not found".format(args.root))
 
-# default setings blueprint
+# default settings blueprint
 if not args.blueprint:
     args.blueprint = os.path.join(os.getcwd(),"blueprint.yml")
 
@@ -84,32 +78,23 @@ if not args.searchterms:
 
 # default setings output file
     if not args.outputfile:
-        args.outputfile = os.path.join(os.getcwd(),"/output.yml")
+        args.outputfile = os.getcwd()
 
 
-# use glob to identify files
 
-# loop over all search terms and file extensions, TBD extension for multiple variants:
-
-
-numberOfSearchTerms  =3
-numberOfFileExtensions =1
-
+# loop over all search terms and file extensions, TBD extension for multiple variants
 filenames = {}
-
-for i_searchterm in range(len(args.searchterms)):
-    filenames[args.searchterms[i_searchterm]]=(glob.glob(args.root+"/**/"+"*"+args.searchterms[i_searchterm]+"*.nc",recursive=True))
-
+for i_searchterm in args.searchterms:
+    filenames[i_searchterm]=(glob.glob(args.root+"/**/"+"*"+i_searchterm+"*.nc",recursive=True))
 # load default settings file
 with open(args.blueprint, 'r') as stream:
     try:
         settings = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         print(exc)
-# define data sets to store results
+# define sets to store results
 directories = set()
 timeperiods = set()
-
 searchresults = {} #TODO implement completness check for results, i.e. relax assumption that always all search variables can be found
 #find relevant directories for each search term
 for i_searchterm in args.searchterms:
@@ -139,22 +124,28 @@ timeperiods_list = list(timeperiods)
 
 # create setting files for all directories, timespans and searchterms, TODO: check for simplification, redundancy reduction
 directory_iterator = 0
-
+pathcollection = []
 for i_directories in directories:
     for i_timespan in timeperiods_list:
-        index = "dir"+str(directory_iterator) + "_" + str(i_timespan[0]) + str(i_timespan[1])
+        index = "_dir"+str(directory_iterator) + "_" + str(i_timespan[0]) + str(i_timespan[1])
         for i_searchterm in args.searchterms:
             if (i_directories,str(i_timespan),i_searchterm) in searchresults.keys():
                 settings["input"][i_searchterm]= searchresults[i_directories,str(i_timespan),i_searchterm]["filepath"]
             # modify years
                 settings ["years"]={"years":{"from":i_timespan[0],"to":i_timespan[1]}}
 
-            # specify individual code for file and output
-
-
-    # modify output file
-        settings["output"]["file"] = args.outputfile+index
-    # save new settings file
-        with open("settings"+index+".yml", "w") as output:
+        # modify output file
+        print(args.outputfile)
+        settings["output"]["file"] = os.path.join(args.outputfile,"output"+index+".nc")
+        # save new settings file
+        name_settings = "settings"+index+".yml"
+        with open(name_settings, "w") as output:
             yaml.dump(settings, output)
+
+        # collect paths to settings
+        pathcollection.append(os.path.join(os.getcwd(),name_settings))
+
     directory_iterator += 1
+# create *.yml file of settingsfiles:
+with open("collected_settings", "w") as output:
+    yaml.dump(pathcollection, output)
