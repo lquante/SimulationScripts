@@ -1,12 +1,10 @@
-
 input:
-  pr: 
-  prsn: 
-  tas: 
-
+  pr:
+  prsn:
+  tas:
 years:
-  from: 
-  to: 
+  from:
+  to:
 output:
   file: 
   variable: approx_snow_height
