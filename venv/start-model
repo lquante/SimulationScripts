@@ -22,11 +22,11 @@ EOF
 model="$(pwd)/model"
 jobname="model"
 logdir=$(pwd)
-queue="priority"
+queue="short"
 cpus=16
 time="1-00:00:00"
 workdir=$(pwd)
-partition="priority"
+partition="standard"
 
 while [[ $# -gt 0 ]]
 do
@@ -80,7 +80,7 @@ do
         *)
             if [[ -z "$settings" ]]
             then
-                settings=$(cat "$key")
+                settings="$1"
             else
                 print_usage
             fi
@@ -127,69 +127,9 @@ job=$(cat << EOFJOB
 #!/usr/bin/env bash
 $slurmheader
 set +e
-cmd=\$(cat <<'EOF1'
-if [ -z "\${DMTCP_CHECKPOINT_DIR}" ]
-then
-    first_run=1
-    export DMTCP_CHECKPOINT_DIR=\${SLURM_JOB_ID}
-else
-    first_run=0
-fi
-if [ -e \${DMTCP_CHECKPOINT_DIR} ]
-then
-    echo "CONTINUING \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
-    echo "Original job id \${DMTCP_CHECKPOINT_DIR}"
-    dmtcp_restart \$(ls \${DMTCP_CHECKPOINT_DIR}/*.dmtcp)
-else
-    echo "STARTING \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
-    settings=\$(cat <<EOF
-$settings
-EOF
-)
-    mkdir -p \${DMTCP_CHECKPOINT_DIR}
-    echo
-    echo "\$settings"
-    echo
-    echo "\$settings" > \${DMTCP_CHECKPOINT_DIR}/settings.yml
-    echo "\$settings" | dmtcp_launch $model - 10>&- 11>&-
-fi
-retval=\$?
-if [ \$retval -eq 0 ]
-then
-    rm -rf \${DMTCP_CHECKPOINT_DIR}
-    echo "Job completed"
-    echo "DONE \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
-else
-    if [ \$retval -ne 7 ]
-    then
-        if [ \$first_run -eq 0 ]
-        then
-            echo "FAILED \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
-        fi
-        exit \$retval
-    else
-        sbatch <<EOF2
-#!/bin/bash
-$slurmheader
-cmd=\\\$(cat <<'EOF\$(echo 1)'
-\$cmd
-EOF\$(echo 1)
-)
-export cmd
-echo "\\\$cmd" | bash
-EOF2
-        if [ \$first_run -eq 0 ]
-        then
-            echo "DONE \${SLURM_JOB_NAME} @ \$(date +\\'%FT%T\\')"
-        fi
-        exit \$?
-    fi
-fi
-EOF1
-)
-export cmd
-echo "\$cmd" | bash
+$model "$settings"
 EOFJOB
-      )
+)
 
 sbatch <<< "$job"
+

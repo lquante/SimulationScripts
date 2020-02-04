@@ -2,6 +2,7 @@ input:
   pr:
   prsn:
   tas:
+  model:
 years:
   from:
   to:

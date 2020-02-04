@@ -62,20 +62,20 @@ if not args.blueprint:
 
 # default file extension to look for
 if not args.fileextensions:
-    args.fileextensions="nc"
+    args.fileextensions = "nc"
 
 # default -  search terms to look for TODO: generalize search term default via blueprint.yml
 if not args.searchterms:
     args.searchterms = (["pr", "prsn", "tas"])
 
-# default settings output file
+    # default settings output file
     if not args.outputfile:
         args.outputfile = os.getcwd()
 # loop over all search terms and file extensions, TBD extension for multiple variants
 filenames = {}
 filecache = []
 for i_searchterm in args.searchterms:
-    for filename in Path(args.root).rglob((i_searchterm+"_"+"*.nc")):
+    for filename in Path(args.root).rglob((i_searchterm + "_" + "*.nc")):
         filecache.append(str(filename))
     filenames[i_searchterm] = filecache
 # load default settings file
@@ -87,44 +87,58 @@ with open(args.blueprint, 'r') as stream:
         print(exc)
 # define sets to store results
 timeperiods = set()
-searchresults = {}#TODO implement completeness check for results, i.e. relax assumption that always all search variables can be found
-#find relevant directories for each search term
+searchresults = {}  # TODO implement completeness check for results, i.e. relax assumption that always all search variables can be found
+# find relevant directories for each search term
 for i_searchterm in args.searchterms:
     searchpattern = ('(?<=/).*' + i_searchterm + '(\_+)+.*\d{8}-\d{8}\.nc')
-   # TODO: relax assumption, that all data is unique with respect to timespan, NB: since directories are searched consecutivly, some (sufficient?!) ordering occurs by directories
+    # TODO: relax assumption, that all data is unique with respect to timespan, NB: since directories are searched consecutivly, some (sufficient?!) ordering occurs by directories
     for i_filenames in filenames[i_searchterm]:
-                filepath= re.search(searchpattern, i_filenames)
-                if filepath:
-                    filepath_string = filepath.string
-                    time_period = re.search('(\d{4})(\d{4})(-)(\d{4})(\d{4})(.nc)$', filepath_string)
-                    model = re.search('[^/](_\w*_\w*_)(.*)(_\w*_\w*_)(\d{4})(\d{4})(-)(\d{4})(\d{4})(.nc)$', filepath_string)
-                    start_year = int(time_period.group(1))
-                    final_year = int(time_period.group(4))
-                    timespan = (start_year, final_year)
-                    timeperiods.add(timespan)
-                    # TODO: relax assumption, that all data ends with YYYYMMDD - YYYYMMDD.nc encoded date and only whole years are relevant for the data, with the same time period for all data
-                    searchresults[start_year, final_year, i_searchterm] = {"file": filepath_string, "model": model}
+        filepath = re.search(searchpattern, i_filenames)
+        if filepath:
+            filepath_string = filepath.string
+            time_period = re.search('(\d{4})(\d{4})(-)(\d{4})(\d{4})(.nc)$', filepath_string)
+            #regular expression to get model identifier from filename, TODO: check for generalization, ATM using sspXXX as end of model identification, where XXX is a three digit number
+            model = re.search('(.*/)(\w*_\w*_)(.*_ssp\d{3})(_\w*_\w*_)(\d{4}\d{4}-\d{4}\d{4}.nc)$', filepath_string)
+            if (model):
+                model_string = model.group(3)
+            else:
+                model_string = "model_not_identified"
+            start_year = int(time_period.group(1))
+            final_year = int(time_period.group(4))
+            timespan = (start_year, final_year)
+            timeperiods.add(timespan)
+            # TODO: relax assumption, that all data ends with YYYYMMDD - YYYYMMDD.nc encoded date and only whole years are relevant for the data, with the same time period for all data
+            searchresults[start_year, final_year, i_searchterm] = {"file": filepath_string, "model": model_string}
 timeperiods_list = list(timeperiods)
 # create setting files for all timespans and searchterms, TODO: check for simplification, redundancy reduction
 timespan_iterator = 0
 pathcollection = []
 for i_timespan in timeperiods_list:
-    index = str(i_timespan[0]) + str(i_timespan[1])
+    timeindex = str(i_timespan[0]) + str(i_timespan[1])
     start_year = i_timespan[0]
     final_year = i_timespan[1]
     for i_searchterm in args.searchterms:
+        # check if key exists
         if (start_year, final_year, i_searchterm) in searchresults.keys():
-            settings["input"][i_searchterm] = searchresults[start_year, final_year, i_searchterm]["file"]
-        # TODO: integrate model key into output
-        # modify years
-            settings ["years"]["from"] = start_year
-            settings["years"]["to"] = final_year
-        #modify output file
-            settings["output"]["file"] = os.path.join(args.outputfile, "output"+index+".nc")
-# save new settings file
-    name_settings = "settings"+index+".yml"
+            # get model name for first searchterm
+            settings["input"]["model"] = searchresults[start_year, final_year,i_searchterm]["model"]
+            # check if model is identical to previous searchterms
+            i_model = searchresults[start_year, final_year, i_searchterm]["model"]
+            if (settings["input"]["model"] == i_model):
+                # write filenames for searchterm
+                settings["input"][i_searchterm] = searchresults[start_year, final_year, i_searchterm]["file"]
+                # modify years
+                settings["years"]["from"] = start_year
+                settings["years"]["to"] = final_year
+            else:
+                print(i_model + "does not match" + settings["input"]["model"] + " - no settings written!")
+        # modify output file
+        outputfilename = str("output_" + i_model +"_"+ timeindex + ".nc")
+        settings["output"]["file"] = os.path.join(args.outputfile[0], outputfilename)
+    # save new settings file
+    name_settings = "settings_" + i_model + "_" + timeindex + ".yml"
     yaml = ruamel.yaml.YAML()
-    yaml.default_flow_style = None # TODO: fix output style independent of platform
+    yaml.default_flow_style = None
     with open(name_settings, "w") as output:
         yaml.dump(settings, output)
     # collect paths to settings
@@ -133,6 +147,5 @@ for i_timespan in timeperiods_list:
 # create *.yml file of settingsfiles:
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
-with open("list_of_settings", "w") as output:
-
+with open("list_of_settings.yml", "w") as output:
     yaml.dump(pathcollection, output)

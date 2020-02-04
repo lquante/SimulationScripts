@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -e
+
+print_usage () {
+    cat <<EOF
+local-model - start a specified model locally
+Usage:
+    $0 [OPTIONS] SETTINGSFILE
+Options:
+    --model PATH   Path to model binary (default: CURRENT/model)
+    --logdir PATH      Directory for log output (default: CURRENT))
+    --workdir PATH     Directory to work in (default: CURRENT)
+
+EOF
+    exit 1
+}
+
+# set defaults:
+model="$(pwd)/model"
+jobname="model"
+logdir=$(pwd)
+workdir=$(pwd)
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+        --model)
+            shift || print_usage
+            model="$1"
+            ;;
+        --logdir)
+            shift || print_usage
+            logdir="$1"
+            ;;
+        --workdir)
+            shift || print_usage
+            workdir="$1"
+            ;;
+        *)
+            if [[ -z "$settings" ]]
+            then
+                settings="$1"
+            else
+                print_usage
+            fi
+            ;;
+    esac
+    shift
+done
+
+if [[ -z "$settings" ]]
+then
+    print_usage
+fi
+
+if [[ ! -e "$model" ]]
+then
+    echo "Cannot find $model"
+    exit 1
+fi
+
+mkdir -p "$workdir"
+mkdir  -p "$logdir"
+$model "$settings"
