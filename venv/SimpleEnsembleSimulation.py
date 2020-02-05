@@ -22,11 +22,11 @@ parser.add_argument("--cpus", type=int, default=16, help="Number of cpus (defaul
 parser.add_argument(
     "--time",
     type=str,
-    default="0-00:10:00",
-    help="Max runtime (default: 0-00:10:00)",
+    default="0-03:30:00",
+    help="Max runtime (default: 0-03:30:00)",
 )
 
-parser.add_argument("--queue", type= str, default="priority", help= "queue to be used on the cluster")
+parser.add_argument("--queue", type= str, default="short", help= "queue to be used on the cluster")
 
 parser.add_argument(
     "--settings", type=str, help="File containing paths to individual settings files"
