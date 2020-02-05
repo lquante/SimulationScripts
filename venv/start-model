@@ -78,7 +78,7 @@ do
             workdir="$1"
             ;;
         *)
-            if [[ -z "$settings" ]]
+           if [[ -z "$settings" ]]
             then
                 settings="$1"
             else
@@ -126,7 +126,6 @@ EOF
 job=$(cat << EOFJOB
 #!/usr/bin/env bash
 $slurmheader
-set +e
 $model "$settings"
 EOFJOB
 )

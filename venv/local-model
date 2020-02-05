@@ -17,7 +17,6 @@ EOF
 
 # set defaults:
 model="$(pwd)/model"
-jobname="model"
 logdir=$(pwd)
 workdir=$(pwd)
 

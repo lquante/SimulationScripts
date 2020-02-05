@@ -3,6 +3,7 @@
 #  imports
 import argparse
 import os
+import re
 import shutil
 import sys
 # defining parser & properties of ensemble run
@@ -19,14 +20,20 @@ parser.add_argument(
 )
 parser.add_argument("--cpus", type=int, default=16, help="Number of cpus (default: 16)")
 parser.add_argument(
-    "--maxtime",
+    "--time",
     type=str,
     default="0-00:10:00",
     help="Max runtime (default: 0-00:10:00)",
 )
+
+parser.add_argument("--queue", type= str, default="priority", help= "queue to be used on the cluster")
+
 parser.add_argument(
     "--settings", type=str, help="File containing paths to individual settings files"
 )
+
+
+
 # variants for execution
 parser.add_argument("--local", action="store_true", help="run locally, not on cluster")
 parser.add_argument("--dry", action="store_true", help="dry run (do not run model)")
@@ -54,14 +61,15 @@ numberOfRuns = len(list_of_settings)
 
 # prepare run
 def schedule_run():
-    global run_id
     global settings_yml
     global run_cnt
     # load path of settingsfile
     run_settings_file = list_of_settings[run_cnt]
     run_settings_paths = os.path.dirname(run_settings_file)
     # create run label
-    run_label = os.path.join(run_settings_paths,"run_"+str(run_cnt))
+    model = re.search('(.*/)(settings_)(.*)(.yml)$', run_settings_file)
+    identifier = model.group(3)
+    run_label = os.path.join(run_settings_paths,identifier+"_run_"+str(run_cnt))
     #check if directory for run already exisits
     if os.path.exists(run_label):
         run_cnt += 1
@@ -75,12 +83,11 @@ def schedule_run():
         return
     if args.local:
         # shell script needs to be in same directory as this script
-
         cmd = ("./local-model"
                 + " --model {}".format(args.model)
                 + " --logdir {}".format(run_label)
                 + " --workdir {}".format(run_label)
-                + " {}/settings.yml".format(run_label))
+                + " {}".format(path_settings))
         if args.verbose:
             print(cmd)
             print(os.getcwd())
@@ -88,25 +95,23 @@ def schedule_run():
         run_cnt += 1
     else:
         # shell script needs to be in same directory as this script
-
-        cmd = (
-            "./start-model"
+        cmd = ("./start-model"
             + " --model {}".format(args.model)
             + " --cpus {}".format(args.cpus)
-            + " --jobname '{}/{}'".format(os.path.basename(os.getcwd()), run_label)
+            + " --jobname '{}_{}'".format("prsn", run_label)
             + " --logdir {}".format(run_label)
-            + " --maxtime {}".format(args.maxtime)
+            + " --time {}".format(args.time)
             + " --queue {}".format(args.queue)
             + " --workdir {}".format(run_label)
-            + " {}/settings.yml".format(run_label)
+            + " {}".format(path_settings)
         )
         if args.verbose:
             print(cmd)
         os.system(cmd)
         run_cnt += 1
 
-# execute runs
 
+# execute runs
 if numberOfRuns >= 1:
     print("Number of runs to be scheduled: %s" % numberOfRuns)
     sys.stdout.write("Run? y/N : ")
@@ -117,7 +122,6 @@ if numberOfRuns >= 1:
         if raw_input() != "y":
             exit("Aborted")
 run_cnt = 0
-run_id = 0
 schedule_run()
 while run_cnt<numberOfRuns:
     schedule_run()
