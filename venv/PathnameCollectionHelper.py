@@ -62,7 +62,7 @@ parser.add_argument(
     "--settingspath",
     nargs="+"
     , type=str,
-    help="Path to put settingsfiles and list of them  (default: CURRENT)"
+    help="Path to put settingsfiles and a list of them and the outputfiles (default: CURRENT)"
 )
 
 args = parser.parse_args()
@@ -82,7 +82,7 @@ if not args.blueprint:
 if not args.fileextensions:
     args.fileextensions = "nc"
 
-# default -  search terms to look for TODO: generalize scenario default via blueprint.yml
+# default -  search terms to look for TODO: generalize scenario default via blueprint.yml, make scenario search robust (ATM non-existing scenario results might be filled up with data from previous scenarios
 if not args.scenarios:
     args.scenarios = (["ssp126", "ssp585"])
 
@@ -146,8 +146,8 @@ for i_scenario in args.scenarios:
     timeperiods_list = list(timeperiods)
 # create setting files for all timespans and searchterms, TODO: check for simplification, redundancy reduction
 timespan_iterator = 0
-pathcollection = []
-
+settingspathcollection = []
+outputpathcollection = []
 for i_scenario in args.scenarios:
     for i_timespan in timeperiods_list:
         timeindex = str(i_timespan[0]) + str(i_timespan[1])
@@ -171,20 +171,30 @@ for i_scenario in args.scenarios:
                     print(i_model + "does not match" + settings["input"]["model"] + " - no settings written!")
         # modify output file
         outputfilename = str("output_" + i_model + "_" + timeindex + ".nc")
-        settings["output"]["file"] = os.path.join(args.outputfile[0], outputfilename)
+        outputfilepath = os.path.join(args.outputfile[0], outputfilename)
+        # collect paths to outputfiles
+        outputpathcollection.append(outputfilepath)
+        settings["output"]["file"] = outputfilepath
         # save new settings file
         name_settings = "settings_" + i_scenario + "_" + i_model + "_" + timeindex + ".yml"
         yaml = ruamel.yaml.YAML()
         yaml.default_flow_style = None
-        os.chdir(args.settingspath[0])
+        os.chdir(args.settingspath)
         with open(name_settings, "w") as output:
             yaml.dump(settings, output)
         # collect paths to settings
-        pathcollection.append(os.path.join(os.getcwd(), name_settings))
+        settingspathcollection.append(os.path.join(os.getcwd(), name_settings))
         timespan_iterator += 1
 # create *.yml file of settingsfiles:
-os.chdir(args.settingspath[0])
+os.chdir(args.settingspath)
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
 with open("list_of_settings.yml", "w") as output:
-    yaml.dump(pathcollection, output)
+    yaml.dump(settingspathcollection, output)
+
+# create *.yml file of outputfiles:
+os.chdir(args.settingspath)
+yaml = ruamel.yaml.YAML()
+yaml.default_flow_style = None
+with open("list_of_outputfiles.yml", "w") as output:
+    yaml.dump(outputpathcollection, output)
