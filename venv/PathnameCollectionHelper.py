@@ -105,7 +105,7 @@ for i_scenario in args.scenarios:
             if Path(args.root).rglob((i_scenario + "*.nc")):
                 filecache.append(str(filename))
         filenames[i_scenario, i_searchterm] = filecache
-# load default settings file
+# load settings file
 yaml = ruamel.yaml.YAML()
 with open(args.blueprint, 'r') as stream:
     try:
@@ -132,7 +132,7 @@ for i_scenario in args.scenarios:
                     searchterm_string = filepath_searchterm.string
                     time_period = re.search('(\d{4})(\d{4})(-)(\d{4})(\d{4})(.nc)$', searchterm_string)
                     # regular expression to get model identifier from filename, TODO: check for generalization, ATM using sspXXX as end of model identification, where XXX is a three digit number
-                    model = re.search('(.*/)(\w*_\w*_)(.*_ssp\d{3})(_\w*_\w*_)(\d{4}\d{4}-\d{4}\d{4}.nc)$', searchterm_string)
+                    model = re.search('(.*/)(\w*_\w*_)(.*_'+i_scenario+')(_\w*_\w*_)(\d{4}\d{4}-\d{4}\d{4}.nc)$', searchterm_string)
                     if (model):
                         model_string = model.group(3)
                     else:
@@ -179,21 +179,21 @@ for i_scenario in args.scenarios:
         name_settings = "settings_" + i_scenario + "_" + i_model + "_" + timeindex + ".yml"
         yaml = ruamel.yaml.YAML()
         yaml.default_flow_style = None
-        os.chdir(args.settingspath)
+        os.chdir(args.settingspath[0])
         with open(name_settings, "w") as output:
             yaml.dump(settings, output)
         # collect paths to settings
         settingspathcollection.append(os.path.join(os.getcwd(), name_settings))
         timespan_iterator += 1
 # create *.yml file of settingsfiles:
-os.chdir(args.settingspath)
+os.chdir(args.settingspath[0])
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
 with open("list_of_settings.yml", "w") as output:
     yaml.dump(settingspathcollection, output)
 
 # create *.yml file of outputfiles:
-os.chdir(args.settingspath)
+os.chdir(args.settingspath[0])
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
 with open("list_of_outputfiles.yml", "w") as output:
