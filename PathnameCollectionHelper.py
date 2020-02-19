@@ -1,9 +1,10 @@
-# This script provides general methods to scrape for filenames in a certain directory.
+# This script provides some utility to scrape for filenames in a certain directory and generate a *.yml settings file
 #  imports
 import argparse
 import os
-from pathlib import Path
 import re
+from pathlib import Path
+
 from ruamel.yaml import ruamel
 
 # Define parser
@@ -132,7 +133,8 @@ for i_scenario in args.scenarios:
                     searchterm_string = filepath_searchterm.string
                     time_period = re.search('(\d{4})(\d{4})(-)(\d{4})(\d{4})(.nc)$', searchterm_string)
                     # regular expression to get model identifier from filename, TODO: check for generalization, ATM using sspXXX as end of model identification, where XXX is a three digit number
-                    model = re.search('(.*/)(\w*_\w*_)(.*_'+i_scenario+')(_\w*_\w*_)(\d{4}\d{4}-\d{4}\d{4}.nc)$', searchterm_string)
+                    model = re.search('(.*/)(\w*_\w*_)(.*_' + i_scenario + ')(_\w*_\w*_)(\d{4}\d{4}-\d{4}\d{4}.nc)$',
+                                      searchterm_string)
                     if (model):
                         model_string = model.group(3)
                     else:
@@ -142,7 +144,7 @@ for i_scenario in args.scenarios:
                     timespan = (start_year, final_year)
                     timeperiods.add(timespan)
                     searchresults[i_scenario, start_year, final_year, i_searchterm] = {"file": searchterm_string,
-                                                                                         "model": model_string}
+                                                                                       "model": model_string}
     timeperiods_list = list(timeperiods)
 # create setting files for all timespans and searchterms, TODO: check for simplification, redundancy reduction
 timespan_iterator = 0

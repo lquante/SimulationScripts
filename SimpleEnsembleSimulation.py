@@ -26,17 +26,16 @@ parser.add_argument(
     help="Max runtime (default: 0-03:30:00)",
 )
 
-parser.add_argument("--queue", type= str, default="short", help= "queue to be used on the cluster")
+parser.add_argument("--queue", type=str, default="short", help="queue to be used on the cluster")
 
 parser.add_argument(
     "--settings", type=str, help="File containing paths to individual settings files"
 )
 
-
-
 # variants for execution
 parser.add_argument("--local", action="store_true", help="run locally, not on cluster")
 parser.add_argument("--dry", action="store_true", help="dry run (do not run model)")
+parser.add_argument("--python", action="store_true", help="run model with python")
 parser.add_argument("--verbose", action="store_true", help="be verbose")
 # initialize argument parser
 args = parser.parse_args()
@@ -59,6 +58,7 @@ with open(args.settings, 'r') as stream:
 # determine number of runs for which settings are provided
 numberOfRuns = len(list_of_settings)
 
+
 # prepare run
 def schedule_run():
     global settings_yml
@@ -67,44 +67,70 @@ def schedule_run():
     run_settings_file = list_of_settings[run_cnt]
     run_settings_paths = os.path.dirname(run_settings_file)
     # create run label
-    model = re.search('(.*/)(settings_)(.*)(.yml)$', run_settings_file)
-    identifier = model.group(3)
-    run_label = os.path.join(run_settings_paths,identifier+"_run_"+str(run_cnt))
-    #check if directory for run already exisits
+    model = re.search('(.*/)(analysis_settings_)(.*)(.yml)$', run_settings_file)
+    if (model):
+        identifier = model.group(3)
+    else:
+        identifier = "model_not_identified"
+    run_label = os.path.join(run_settings_paths, identifier + "_run_" + str(run_cnt))
+    # check if directory for run already exisits
     if os.path.exists(run_label):
         run_cnt += 1
         return
     # create directory for run
     os.mkdir(run_label)
     # move settings file
-    path_settings = os.path.join(run_label+"/settings.yml")
+
+    path_settings = os.path.join(run_label + "/settings.yml")
     shutil.copy(run_settings_file, path_settings)
     if args.dry:
         return
     if args.local:
         # shell script needs to be in same directory as this script
-        cmd = ("./local-model"
-                + " --model {}".format(args.model)
-                + " --logdir {}".format(run_label)
-                + " --workdir {}".format(run_label)
-                + " {}".format(path_settings))
+        if (args.python):
+            cmd = ("./local-model"
+               + " --python 1"
+               + " --model {}".format(args.model)
+               + " --logdir {}".format(run_label)
+               + " --workdir {}".format(run_label)
+               + " {}".format(path_settings))
+        else:
+            cmd = ("./local-model"
+                   + " --model {}".format(args.model)
+                   + " --logdir {}".format(run_label)
+                   + " --workdir {}".format(run_label)
+                   + " {}".format(path_settings))
         if args.verbose:
             print(cmd)
             print(os.getcwd())
         os.system(cmd)
         run_cnt += 1
+
     else:
         # shell script needs to be in same directory as this script
-        cmd = ("./start-model"
-            + " --model {}".format(args.model)
-            + " --cpus {}".format(args.cpus)
-            + " --jobname '{}_{}'".format("prsn", run_label)
-            + " --logdir {}".format(run_label)
-            + " --time {}".format(args.time)
-            + " --queue {}".format(args.queue)
-            + " --workdir {}".format(run_label)
-            + " {}".format(path_settings)
-        )
+        if (args.python):
+            cmd = ("./start-model"
+               + " --model {}".format(args.model)
+               + " --python 1"
+               + " --cpus {}".format(args.cpus)
+               + " --jobname '{}'".format(run_label)
+               + " --logdir {}".format(run_label)
+               + " --time {}".format(args.time)
+               + " --queue {}".format(args.queue)
+               + " --workdir {}".format(run_label)
+               + " {}".format(path_settings)
+               )
+        else:
+            cmd = ("./start-model"
+                   + " --model {}".format(args.model)
+                   + " --cpus {}".format(args.cpus)
+                   + " --jobname '{}'".format(run_label)
+                   + " --logdir {}".format(run_label)
+                   + " --time {}".format(args.time)
+                   + " --queue {}".format(args.queue)
+                   + " --workdir {}".format(run_label)
+                   + " {}".format(path_settings)
+                   )
         if args.verbose:
             print(cmd)
         os.system(cmd)
@@ -123,5 +149,5 @@ if numberOfRuns >= 1:
             exit("Aborted")
 run_cnt = 0
 schedule_run()
-while run_cnt<numberOfRuns:
+while run_cnt < numberOfRuns:
     schedule_run()

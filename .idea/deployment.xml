@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" serverName="PIK_cluster">
+  <component name="PublishConfigData" serverName="PIK_cluster_tmp">
     <serverData>
-      <paths name="PIK_cluster">
+      <paths name="PIK_cluster_tmp">
         <serverdata>
           <mappings>
-            <mapping deploy="/SimulationScripts" local="$PROJECT_DIR$" />
+            <mapping deploy="/SimulationScripts" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>

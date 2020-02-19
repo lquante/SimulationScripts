@@ -8,6 +8,7 @@ Usage:
     $0 [OPTIONS] SETTINGSFILE
 Options:
     --model PATH   Path to model binary (default: CURRENT/model)
+    --python       flag to indicate execution with python
     --logdir PATH      Directory for log output (default: CURRENT))
     --workdir PATH     Directory to work in (default: CURRENT)
 
@@ -19,7 +20,7 @@ EOF
 model="$(pwd)/model"
 logdir=$(pwd)
 workdir=$(pwd)
-
+python=0
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -29,6 +30,10 @@ do
             shift || print_usage
             model="$1"
             ;;
+        --python)
+          shift || print_usage
+          python="$1"
+          ;;
         --logdir)
             shift || print_usage
             logdir="$1"
@@ -62,4 +67,10 @@ fi
 
 mkdir -p "$workdir"
 mkdir  -p "$logdir"
-$model "$settings"
+if [ "$python" == 1 ]
+then
+  echo "usr/bin/python $model --settings $settings"
+  $model --settings "$settings"
+else
+  $model "$settings"
+fi
