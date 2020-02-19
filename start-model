@@ -8,6 +8,7 @@ Usage:
     $0 [OPTIONS] SETTINGSFILE
 Options:
     --model PATH   Path to model binary (default: CURRENT/model)
+    --python       Run model in python, most likely python script
     --cpus CPUS        Number of cpus (default: 16)
     --jobname JOBNAME  Name of job (default: model)
     --logdir PATH      Directory for log output (default: CURRENT)
@@ -20,6 +21,7 @@ EOF
 
 # set defaults:
 model="$(pwd)/model"
+python=$FALSE
 jobname="model"
 logdir=$(pwd)
 queue="short"
@@ -122,13 +124,21 @@ slurmheader=$(cat <<EOF
 #SBATCH --workdir=$workdir
 EOF
            )
-
+if $python
+then
+job=$(cat << EOFJOB
+#!/usr/bin/env bash
+$slurmheader
+$model --settings "$settings"
+EOFJOB
+)
+else
 job=$(cat << EOFJOB
 #!/usr/bin/env bash
 $slurmheader
 $model "$settings"
 EOFJOB
 )
-
+fi
 sbatch <<< "$job"
 
