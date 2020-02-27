@@ -67,7 +67,7 @@ def schedule_run():
     run_settings_file = list_of_settings[run_cnt]
     run_settings_paths = os.path.dirname(run_settings_file)
     # create run label
-    model = re.search('(.*/)(analysis_settings_)(.*)(.yml)$', run_settings_file)
+    model = re.search('(.*/)(settings_)(.*)(.yml)$', run_settings_file)
     if (model):
         identifier = model.group(3)
     else:

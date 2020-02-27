@@ -51,8 +51,7 @@ parser.add_argument(
 # (parts) of filenames to look for
 
 parser.add_argument(
-    "--outputfile",
-    nargs="+"
+    "--outputfile"
     , type=str,
     help="Path and name to output file  (default: CURRENT/output_IDENTIFIER.nc)"
 )
@@ -60,8 +59,7 @@ parser.add_argument(
 # path to store settingsfiles
 
 parser.add_argument(
-    "--settingspath",
-    nargs="+"
+    "--settingspath"
     , type=str,
     help="Path to put settingsfiles and a list of them and the outputfiles (default: CURRENT)"
 )
@@ -173,7 +171,7 @@ for i_scenario in args.scenarios:
                     print(i_model + "does not match" + settings["input"]["model"] + " - no settings written!")
         # modify output file
         outputfilename = str("output_" + i_model + "_" + timeindex + ".nc")
-        outputfilepath = os.path.join(args.outputfile[0], outputfilename)
+        outputfilepath = os.path.join(args.outputfile, outputfilename)
         # collect paths to outputfiles
         outputpathcollection.append(outputfilepath)
         settings["output"]["file"] = outputfilepath
@@ -181,21 +179,21 @@ for i_scenario in args.scenarios:
         name_settings = "settings_" + i_scenario + "_" + i_model + "_" + timeindex + ".yml"
         yaml = ruamel.yaml.YAML()
         yaml.default_flow_style = None
-        os.chdir(args.settingspath[0])
+        os.chdir(args.settingspath)
         with open(name_settings, "w") as output:
             yaml.dump(settings, output)
         # collect paths to settings
         settingspathcollection.append(os.path.join(os.getcwd(), name_settings))
         timespan_iterator += 1
 # create *.yml file of settingsfiles:
-os.chdir(args.settingspath[0])
+os.chdir(args.settingspath)
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
 with open("list_of_settings.yml", "w") as output:
     yaml.dump(settingspathcollection, output)
 
 # create *.yml file of outputfiles:
-os.chdir(args.settingspath[0])
+os.chdir(args.settingspath)
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
 with open("list_of_outputfiles.yml", "w") as output:

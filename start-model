@@ -39,6 +39,10 @@ do
             shift || print_usage
             model="$1"
             ;;
+        --python)
+          shift || print_usage
+          python="$1"
+          ;;
         --cpus)
             shift || print_usage
             cpus="$1"
@@ -124,7 +128,7 @@ slurmheader=$(cat <<EOF
 #SBATCH --workdir=$workdir
 EOF
            )
-if $python
+if [ "$python" == 1 ]
 then
 job=$(cat << EOFJOB
 #!/usr/bin/env bash
