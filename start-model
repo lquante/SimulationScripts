@@ -26,9 +26,11 @@ jobname="model"
 logdir=$(pwd)
 queue="short"
 cpus=16
+memory=4000
 time="1-00:00:00"
 workdir=$(pwd)
 partition="standard"
+constraint="haswell"
 
 while [[ $# -gt 0 ]]
 do
@@ -46,6 +48,10 @@ do
         --cpus)
             shift || print_usage
             cpus="$1"
+            ;;
+         --memory)
+            shift || print_usage
+            memory="$1"
             ;;
         --jobname)
             shift || print_usage
@@ -67,6 +73,11 @@ do
                     ;;
                 ram_gpu)
                     partition="ram_gpu"
+                    queue="short"
+                    ;;
+                broadwell)
+                    partition="broadwell"
+                    constraint="broadwell"
                     queue="short"
                     ;;
                 *)
@@ -113,6 +124,7 @@ slurmheader=$(cat <<EOF
 #SBATCH --job-name="$jobname"
 #SBATCH --qos=$queue
 #SBATCH --partition=$partition
+#SBATCH --constraint=$constraint
 #SBATCH --output=$logdir/%j.txt
 #SBATCH --error=$logdir/%j.txt
 #SBATCH --account=acclimat
@@ -125,6 +137,7 @@ slurmheader=$(cat <<EOF
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=$cpus
+#SBATCH --mem=$memory
 #SBATCH --workdir=$workdir
 EOF
            )

@@ -7,10 +7,8 @@
 import argparse
 import os
 import re
-import shutil
-import sys
-from ruamel.yaml import ruamel
 
+from ruamel.yaml import ruamel
 
 # argument parser definition
 parser = argparse.ArgumentParser(description="Calculate some analysis metrics on specified files")
@@ -22,12 +20,6 @@ parser.add_argument(
     , type=str,
     required=True,
     help="YML list of datafile(s)"
-)
-parser.add_argument(
-    "--outputdir"
-    , type=str,
-    required=True,
-    help="directory to put individual filelists"
 )
 
 args = parser.parse_args()
@@ -58,7 +50,7 @@ sorted_models = {}
 for i_model in set_of_models:
     files_from_model = []
     for i_data in data:
-        model = re.search('(.*/)(output_'+i_model+'_\d{4}\d{4})(.nc)$', i_data)
+        model = re.search('(.*/)(output_' + i_model + '_\d{4}\d{4})(.nc)$', i_data)
         if (model):
             model_string = model.string
             files_from_model.append(model_string)
@@ -67,10 +59,12 @@ for i_model in set_of_models:
     sorted_models[i_model] = files_from_model
 
 # export as yml files
+# get dir of data
+outputdir = os.path.dirname(args.data)
 
 for i_model in set_of_models:
-    os.chdir(args.outputdir)
+    os.chdir(outputdir)
     yaml = ruamel.yaml.YAML()
     yaml.default_flow_style = None
-    with open("data_"+i_model+".yml", "w") as output:
+    with open("data_" + i_model + ".yml", "w") as output:
         yaml.dump(sorted_models[i_model], output)

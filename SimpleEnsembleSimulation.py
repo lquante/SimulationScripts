@@ -6,11 +6,11 @@ import os
 import re
 import shutil
 import sys
-# defining parser & properties of ensemble run
-from datetime import date
 
 from pip._vendor.distlib.compat import raw_input
 from ruamel.yaml import ruamel
+
+# defining parser & properties of ensemble run
 
 parser = argparse.ArgumentParser(description="Schedule an ensemble of model runs")
 parser.add_argument(
@@ -19,11 +19,12 @@ parser.add_argument(
     help="Path to model binary (default: CURRENT/model)",
 )
 parser.add_argument("--cpus", type=int, default=16, help="Number of cpus (default: 16)")
+parser.add_argument("--memory", type=int, default=4000, help="RAM per job in MB (default: 4000)")
 parser.add_argument(
     "--time",
     type=str,
-    default="0-03:30:00",
-    help="Max runtime (default: 0-03:30:00)",
+    default="1-00:00:00",
+    help="Max runtime (default: 1-00:00:00)",
 )
 
 parser.add_argument("--queue", type=str, default="short", help="queue to be used on the cluster")
@@ -110,20 +111,22 @@ def schedule_run():
         # shell script needs to be in same directory as this script
         if (args.python):
             cmd = ("./start-model"
-               + " --model {}".format(args.model)
-               + " --python 1"
-               + " --cpus {}".format(args.cpus)
-               + " --jobname '{}'".format(run_label)
-               + " --logdir {}".format(run_label)
-               + " --time {}".format(args.time)
-               + " --queue {}".format(args.queue)
-               + " --workdir {}".format(run_label)
-               + " {}".format(path_settings)
-               )
+                   + " --model {}".format(args.model)
+                   + " --python 1"
+                   + " --cpus {}".format(args.cpus)
+                   + " --memory {}".format(args.memory)
+                   + " --jobname '{}'".format(run_label)
+                   + " --logdir {}".format(run_label)
+                   + " --time {}".format(args.time)
+                   + " --queue {}".format(args.queue)
+                   + " --workdir {}".format(run_label)
+                   + " {}".format(path_settings)
+                   )
         else:
             cmd = ("./start-model"
                    + " --model {}".format(args.model)
                    + " --cpus {}".format(args.cpus)
+                   + " --memory {}".format(args.memory)
                    + " --jobname '{}'".format(run_label)
                    + " --logdir {}".format(run_label)
                    + " --time {}".format(args.time)
