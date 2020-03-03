@@ -9,6 +9,7 @@ Usage:
 Options:
     --model PATH   Path to model binary (default: CURRENT/model)
     --python       Run model in python, most likely python script
+    --dependency  Job ID of Job that needs to finih before Job can start
     --cpus CPUS        Number of cpus (default: 16)
     --jobname JOBNAME  Name of job (default: model)
     --logdir PATH      Directory for log output (default: CURRENT)
@@ -116,6 +117,8 @@ fi
 mkdir -p "$workdir"
 mkdir -p "$logdir"
 
+
+
 slurmheader=$(
   cat <<EOF
 #SBATCH --job-name="$jobname"
@@ -136,6 +139,7 @@ slurmheader=$(
 #SBATCH --cpus-per-task=$cpus
 #SBATCH --mem=$memory
 #SBATCH --workdir=$workdir
+#SBATCH --dependency=<COMPLETED:$dependency>
 EOF
 )
 if [ "$python" == 1 ]; then

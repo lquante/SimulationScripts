@@ -33,6 +33,10 @@ parser.add_argument(
     "--settings", type=str, help="File containing paths to individual settings files"
 )
 
+parser.add_argument(
+    "--dependency", type=int, help="JOB ID that needs to finish before Job starts"
+)
+
 # variants for execution
 parser.add_argument("--local", action="store_true", help="run locally, not on cluster")
 parser.add_argument("--dry", action="store_true", help="dry run (do not run model)")
@@ -109,6 +113,21 @@ def schedule_run():
 
     else:
         # shell script needs to be in same directory as this script
+        if (args.python & args.dependency):
+            cmd = ("./start-model"
+                   + " --model {}".format(args.model)
+                   + " --dependency {}".format(args.dependency)
+                   + " --python 1"
+                   + " --cpus {}".format(args.cpus)
+                   + " --memory {}".format(args.memory)
+                   + " --jobname '{}'".format(run_label)
+                   + " --logdir {}".format(run_label)
+                   + " --time {}".format(args.time)
+                   + " --queue {}".format(args.queue)
+                   + " --workdir {}".format(run_label)
+                   + " {}".format(path_settings)
+                   )
+
         if (args.python):
             cmd = ("./start-model"
                    + " --model {}".format(args.model)
