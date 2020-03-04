@@ -26,7 +26,7 @@ jobname="model"
 logdir=$(pwd)
 queue="short"
 cpus=16
-memory=4000
+memory=60000
 time="1-00:00:00"
 workdir=$(pwd)
 partition="standard"
@@ -65,6 +65,9 @@ while [[ $# -gt 0 ]]; do
     queue="$1"
     case "$queue" in
     priority)
+      partition="priority"
+      ;;
+    standby)
       partition="priority"
       ;;
     short | medium | long)
@@ -139,7 +142,6 @@ slurmheader=$(
 EOF
 )
 if [ "$python" == 1 ]; then
-  source activate my_root # activate custom environment to ensure package availability
   job=$(
     cat <<EOFJOB
 #!/usr/bin/env bash

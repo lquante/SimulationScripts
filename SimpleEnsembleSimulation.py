@@ -84,7 +84,7 @@ def schedule_run():
         return
     # create directory for run
     os.mkdir(run_label)
-    # move settings file
+    # copy settings file
 
     path_settings = os.path.join(run_label + "/settings.yml")
     shutil.copy(run_settings_file, path_settings)
