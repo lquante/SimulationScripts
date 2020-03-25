@@ -1,4 +1,4 @@
-# This script provides some utility to scrape for filenames in a certain directory and generate a *.yml settings file
+# This script provides some assistance to scrape for filenames in a certain directory and generate a *.yml settings file
 #  imports
 import argparse
 import os
@@ -174,7 +174,7 @@ models_list = list(models)
 timespan_iterator = 0
 settingspathcollection = []
 outputpathcollection = []
-
+inputfilecollection = []
 # create directory to put settingsfiles
 
 os.chdir(args.settingsdir)
@@ -192,9 +192,10 @@ for i_model in models_list:
                 if (i_scenario, start_year, final_year, i_searchterm, i_model) in searchresults.keys():
                     settings["input"]["model"] = i_model
                     # write filenames for searchterm
-                    settings["input"][i_searchterm] = \
-                    searchresults[i_scenario, start_year, final_year, i_searchterm, i_model][
+                    filename = searchresults[i_scenario, start_year, final_year, i_searchterm, i_model][
                         "file"]
+                    settings["input"][i_searchterm] = filename
+                    inputfilecollection.append(filename)
                     # modify years
                     settings["years"]["from"] = start_year
                     settings["years"]["to"] = final_year
@@ -214,6 +215,15 @@ for i_model in models_list:
             # collect paths to settings
             settingspathcollection.append(os.path.join(os.getcwd(), name_settings))
             timespan_iterator += 1
+
+# create *.yml file of inputfiles:
+
+os.chdir(os.path.join(args.settingsdir, "inputfiles"))
+yaml = ruamel.yaml.YAML()
+yaml.default_flow_style = None
+with open("inputfiles.yml", "w") as output:
+    yaml.dump(inputfilecollection, output)
+
 # create *.yml file of settingsfiles:
 
 os.chdir(os.path.join(args.settingsdir, "settings"))
