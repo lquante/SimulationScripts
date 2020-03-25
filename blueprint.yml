@@ -1,0 +1,15 @@
+input:
+  pr:
+  prsn:
+  tas:
+  model:
+years:
+  from:
+  to:
+output:
+  file:
+  firstVariable: approx_fresh_daily_snow_height
+  secondVariable: approx_accumulated_snow_height
+  thirdVariable: approx_change_snow_height
+  format: netcdf
+
