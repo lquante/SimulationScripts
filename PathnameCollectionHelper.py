@@ -218,7 +218,7 @@ for i_model in models_list:
 
 # create *.yml file of inputfiles:
 
-os.chdir(os.path.join(args.settingsdir, "inputfiles"))
+os.chdir(settingsdir)
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None
 with open("inputfiles.yml", "w") as output:
