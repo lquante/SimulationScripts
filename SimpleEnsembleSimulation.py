@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import sys
+from datetime import datetime
 
 from pip._vendor.distlib.compat import raw_input
 from ruamel.yaml import ruamel
@@ -28,6 +29,10 @@ parser.add_argument(
 )
 
 parser.add_argument("--queue", type=str, default="short", help="queue to be used on the cluster")
+
+parser.add_argument("--qos", type=str, default="standard", help="qos to be used on the cluster")
+
+parser.add_argument("--partition", type=str, default="standard", help="partition to be used on the cluster")
 
 parser.add_argument(
     "--settings", type=str, help="File containing paths to individual settings files"
@@ -73,10 +78,12 @@ def schedule_run():
     run_settings_paths = os.path.dirname(run_settings_file)
     # create run label
     model = re.search('(.*/)(settings_)(.*)(.yml)$', run_settings_file)
+    now = datetime.now()
+    current_time = now.strftime("%H:%M:%S")
     if (model):
-        identifier = model.group(3)
+        identifier = model.group(3) + str(current_time)
     else:
-        identifier = "model_not_identified"
+        identifier = "ensemble_" + str(current_time)
     run_label = os.path.join(run_settings_paths, identifier + "_run_" + str(run_cnt))
     # check if directory for run already exisits
     if os.path.exists(run_label):
@@ -113,20 +120,7 @@ def schedule_run():
 
     else:
         # shell script needs to be in same directory as this script
-        if (args.python & args.dependency):
-            cmd = ("./start-model"
-                   + " --model {}".format(args.model)
-                   + " --dependency {}".format(args.dependency)
-                   + " --python 1"
-                   + " --cpus {}".format(args.cpus)
-                   + " --memory {}".format(args.memory)
-                   + " --jobname '{}'".format(run_label)
-                   + " --logdir {}".format(run_label)
-                   + " --time {}".format(args.time)
-                   + " --queue {}".format(args.queue)
-                   + " --workdir {}".format(run_label)
-                   + " {}".format(path_settings)
-                   )
+
 
         if (args.python):
             cmd = ("./start-model"
@@ -138,6 +132,8 @@ def schedule_run():
                    + " --logdir {}".format(run_label)
                    + " --time {}".format(args.time)
                    + " --queue {}".format(args.queue)
+                   + " --qos {}".format(args.qos)
+                   + " --partition {}".format(args.partition)
                    + " --workdir {}".format(run_label)
                    + " {}".format(path_settings)
                    )
@@ -150,6 +146,8 @@ def schedule_run():
                    + " --logdir {}".format(run_label)
                    + " --time {}".format(args.time)
                    + " --queue {}".format(args.queue)
+                   + " --qos {}".format(args.qos)
+                   + " --partition {}".format(args.partition)
                    + " --workdir {}".format(run_label)
                    + " {}".format(path_settings)
                    )

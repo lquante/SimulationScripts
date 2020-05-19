@@ -84,7 +84,7 @@ if not args.fileextensions:
 
 # default -  search terms to look for TODO: generalize scenario default via blueprint.yml, make scenario search robust (ATM non-existing scenario results might be filled up with data from previous scenarios
 if not args.scenarios:
-    args.scenarios = (["ssp126", "ssp585"])
+    args.scenarios = (["historical", "ssp126", "ssp370" "ssp585"])
 
 # default -  search terms to look for TODO: generalize search term default via blueprint.yml
 if not args.searchterms:
@@ -217,7 +217,7 @@ for i_model in models_list:
             timespan_iterator += 1
 
 # create *.yml file of inputfiles:
-
+print('settingsfiles generated')
 os.chdir(settingsdir)
 yaml = ruamel.yaml.YAML()
 yaml.default_flow_style = None

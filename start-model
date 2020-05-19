@@ -13,8 +13,10 @@ Options:
     --jobname JOBNAME  Name of job (default: model)
     --logdir PATH      Directory for log output (default: CURRENT)
     --maxtime TIME     Max runtime (default: 1-00:00:00)
-    --queue QUEUE      Cluster queue: priority (default), short, medium, long
+    --queue QUEUE      Cluster queue: short (default), priority, medium, long, ram_gpu
     --workdir PATH     Directory to work in (default: CURRENT)
+    --qos QOS          Cluster QOS: short (default, medium, long, io, priority, standby
+    --partition        Cluster partition: standard (default), priority, ram_gpu, io
 EOF
   exit 1
 }
@@ -30,6 +32,7 @@ memory=60000
 time="1-00:00:00"
 workdir=$(pwd)
 partition="standard"
+qos="short"
 constraint="haswell"
 
 while [[ $# -gt 0 ]]; do
@@ -60,6 +63,14 @@ while [[ $# -gt 0 ]]; do
     shift || print_usage
     logdir="$1"
     ;;
+  --qos)
+    shift || print_usage
+    qos="$1"
+    ;;
+  --partition)
+    shift || print_usage
+    partition="$1"
+    ;;
   --queue)
     shift || print_usage
     queue="$1"
@@ -81,6 +92,11 @@ while [[ $# -gt 0 ]]; do
       partition="broadwell"
       constraint="broadwell"
       queue="short"
+      ;;
+    io)
+      partition="io"
+      queue="io"
+      cpus=1
       ;;
     *)
       echo "Unknown cluster queue '$queue'"
