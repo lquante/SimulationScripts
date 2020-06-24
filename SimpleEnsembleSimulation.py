@@ -3,10 +3,8 @@
 #  imports
 import argparse
 import os
-import re
 import shutil
 import sys
-from datetime import datetime
 
 from pip._vendor.distlib.compat import raw_input
 from ruamel.yaml import ruamel
@@ -77,13 +75,8 @@ def schedule_run():
     run_settings_file = list_of_settings[run_cnt]
     run_settings_paths = os.path.dirname(run_settings_file)
     # create run label
-    model = re.search('(.*/)(settings_)(.*)(.yml)$', run_settings_file)
-    now = datetime.now()
-    current_time = now.strftime("%H:%M:%S")
-    if (model):
-        identifier = model.group(3) + str(current_time)
-    else:
-        identifier = "ensemble_" + str(current_time)
+
+    identifier = str(run_settings_file)
     run_label = os.path.join(run_settings_paths, identifier + "_run_" + str(run_cnt))
     # check if directory for run already exisits
     if os.path.exists(run_label):
